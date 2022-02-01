@@ -1,6 +1,3 @@
-stages:
-  - dynamic_tests
-
 cypress_run:
     image: cypress/browsers:node16.5.0-chrome94-ff93
     stage: dynamic_tests
