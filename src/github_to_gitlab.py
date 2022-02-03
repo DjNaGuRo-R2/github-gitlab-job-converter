@@ -16,10 +16,12 @@ def get_variables(dictionary):
     secrets = value.get("secrets", "")
     if(inputs):
         for key, value in inputs.items():
-            variables[key] = value.get("default", "")
+            variables[key] = format_content(value.get("default", "")) \
+                if value.get("type") == "string" else value.get("default", "")
     if(secrets):
         for key, value in secrets.items():
-            variables[key] = value.get("default", "")
+            variables[key] = format_content(value.get("default", "")) \
+                if value.get("type") == "string" else value.get("default", "")
     return variables
 
 def get_docker_image(job):
@@ -41,8 +43,9 @@ def get_artifacts(steps):
     artifacts = {}
     for elt in steps:
         if "actions/upload-artifact" in elt.get("uses", ""):
-            artifacts["name"] = elt["with"].get("name", "")
-            artifacts["paths"] = elt["with"].get("path", "").splitlines()
+            artifacts["name"] = format_content(elt["with"].get("name", ""))
+            artifacts["paths"] = [format_content(line) 
+                                    for line in elt["with"].get("path", "").splitlines()]
             artifacts["expire_in"] = elt["with"].get("retention-days", "")
             when = elt.get("if", "")
             if when == "failure()":
@@ -59,7 +62,8 @@ def get_cache(steps):
     for elt in steps:
         if "actions/cache" in elt.get("uses", ""):
             cache["key"] = elt["with"].get("key", "")
-            cache["paths"] = elt["with"].get("path", "").splitlines()
+            cache["paths"] = [format_content(line) 
+                                for line in elt["with"].get("path", "").splitlines()]
     return cache
 
 def get_script(steps):
@@ -68,7 +72,7 @@ def get_script(steps):
         if "run" in step:
             lines = step.get("run").splitlines()
             for line in lines:
-                script.append(line)
+                script.append(format_content(line))
     return script
 
 def github_calleable_workflow_to_gitlab(workflow_content):
@@ -91,3 +95,8 @@ def github_calleable_workflow_to_gitlab(workflow_content):
         if artifacts:
             gitlab_cicd_content[job_name]["artifacts"] = artifacts
     return gitlab_cicd_content
+
+def format_content(string):
+    elt = string.split(">>")[0].strip().replace("${{", "${").replace("}}", "}")\
+        .replace("env.","").replace("inputs.", "").replace("secrets.", "")
+    return elt
