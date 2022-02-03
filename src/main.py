@@ -19,3 +19,4 @@ gitlab_cicd_content = github_calleable_workflow_to_gitlab(yaml_content)
 
 with open(OUTPUT_JOB_FILE, 'w') as job_file:
     yaml.dump(gitlab_cicd_content, job_file)
+    
