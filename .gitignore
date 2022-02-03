@@ -1,3 +1,6 @@
 .idea/
 .ipynb_checkpoints/
 venv/
+Outputs/**/*.json
+gitlab-cypress_runToDict.ipynb
+yaml_script.py

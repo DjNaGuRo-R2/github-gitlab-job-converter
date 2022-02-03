@@ -1,0 +1,47 @@
+cargo_doc:
+  artifacts:
+    expire_in: 15
+    name: Documentation
+    paths:
+    - ${{ env.OUTPUT_FOLDER }}
+    when: on_success
+  image: rust:1.57-buster
+  script:
+  - echo "CIWORKSPACE_PATH=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+  - cd ${{ inputs.PROJECT_ROOT }}
+  - echo "PROJECT_ROOT_RELATIVE_PATH=$(pwd)" >> $GITHUB_ENV
+  - 'echo "GITHUB_WORKSPACE : $GITHUB_WORKSPACE" '
+  - cd ${{ inputs.PROJECT_ROOT }}
+  - if [ ! -f "Cargo.toml" ]; then
+  - '  echo "ERROR --> Any Cargo.toml file isn''t present in the given root project
+    folder ${{ inputs.PROJECT_ROOT }}"'
+  - '  echo "INSIDE_IF_PATH=$(pwd)" >> $GITHUB_ENV'
+  - fi
+  - echo "ADDITIONAL_OPTIONS=${{inputs.ADDITIONAL_OPTIONS}}" >> $GITHUB_ENV
+  - echo "OUTPUT_FOLDER=${{inputs.OUTPUT_FOLDER}}" >> $GITHUB_ENV
+  - if [ ${{ inputs.ONLY_LIB }} ]; then
+  - '  echo "ADDITIONAL_OPTIONS=${{env.ADDITIONAL_OPTIONS}} --lib" >> $GITHUB_ENV'
+  - fi
+  - if [ ${{ inputs.RELEASE_MODE }} ]; then
+  - '  echo "ADDITIONAL_OPTIONS=${{env.ADDITIONAL_OPTIONS}} --release" >> $GITHUB_ENV'
+  - fi
+  - if [ ! ${{env.PROJECT_ROOT_RELATIVE_PATH}} -ef ${{env.CIWORKSPACE_PATH}} ]; then
+  - '  echo "Both paths are different. Test result negation : $? "'
+  - '  echo "OUTPUT_FOLDER=$GITHUB_WORKSPACE/${{ inputs.OUTPUT_FOLDER }}" >> $GITHUB_ENV'
+  - 'fi   '
+  - 'echo "Inputs ONLY_LIB: ${{ inputs.ONLY_LIB }}, RELEASE_MODE: ${{ inputs.RELEASE_MODE
+    }}"'
+  - 'echo "Inputs OUTPUT_FOLDER: ${{ inputs.OUTPUT_FOLDER }}, ADDITIONAL_OPTIONS:
+    ${{ inputs.ADDITIONAL_OPTIONS }}"'
+  - 'echo "Env updates OUTPUT_FOLDER: ${{ env.OUTPUT_FOLDER }}, ADDITIONAL_OPTIONS:
+    ${{ env.ADDITIONAL_OPTIONS }}"'
+  - 'echo "PROJECT_ROOT_RELATIVE_PATH : ${{env.PROJECT_ROOT_RELATIVE_PATH}} and GITHUB_WORKSPACE
+    : $GITHUB_WORKSPACE / its context: ${{github.workspace}}"'
+  - cd ${{ inputs.PROJECT_ROOT }}
+  - cargo doc --target-dir ${{env.OUTPUT_FOLDER}} ${{ env.ADDITIONAL_OPTIONS }}
+  variables:
+    ADDITIONAL_OPTIONS: ''
+    ONLY_LIB: false
+    OUTPUT_FOLDER: website_build
+    PROJECT_ROOT: .
+    RELEASE_MODE: true
