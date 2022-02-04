@@ -1,8 +1,9 @@
 reusable-cypress_run:
   artifacts:
     expire_in: 15
-    name: cypress-screenshots
+    name: cypress-videos - cypress-screenshots
     paths:
+    - cypress/videos
     - cypress/screenshots
     when: on_failure
   cache:

@@ -2,7 +2,7 @@ from github_to_gitlab import github_calleable_workflow_to_gitlab
 #from yaml import load, dump
 import yaml
 
-JOB_NAME = "cypress_run"
+JOB_NAME = "cypress_run_2"
 INPUT_JOB_FILE = f"../Inputs/github/{JOB_NAME}.yml"
 OUTPUT_JOB_FILE = f"../Outputs/gitlab/{JOB_NAME}.yml"
 

@@ -48,17 +48,20 @@ def get_steps(job):
     return job.get("steps", [])
 
 def get_artifacts(steps):
-    artifacts = {}
+    artifacts = {
+        "name" : "",
+        "paths" : []
+    }
     for elt in steps:
         if "actions/upload-artifact" in elt.get("uses", ""):
-             # concatane format_content(elt["with"].get("name", "") and artifacts["name"] iff 
-             # this last is not empty and not whitespaces
+             # concatane format_content(elt["with"].get("name", "") and artifacts["name"] iff this last isn't
+             # empty and not whitespace
             artifacts["name"] = (
                 format_content(elt["with"].get("name", "")), 
                 artifacts["name"] + " - " + format_content(elt["with"].get("name", ""))
-                )[ not artifacts["name"].isspace() and len(artifacts["name"]) > 0]
-            artifacts["paths"] = [format_content(line) 
-                                    for line in elt["with"].get("path", "").splitlines()]
+                )[ not artifacts["name"].isspace() and len(artifacts["name"]) > 0]           
+            artifacts["paths"].extend([format_content(line) 
+                                    for line in elt["with"].get("path", "").splitlines()])
             artifacts["expire_in"] = elt["with"].get("retention-days", "")
             when = elt.get("if", "")
             if when == "failure()":
@@ -113,3 +116,24 @@ def format_content(string):
     elt = string.split(">>")[0].strip().replace("${{", "${").replace("}}", "}")\
         .replace("env.","").replace("inputs.", "").replace("secrets.", "")
     return elt
+
+def github_workflow_to_gitlab(workflow_content):
+    _,jobs = browseDict("jobs", workflow_content)
+    gitlab_cicd_content = {}
+    variables = get_job_env_variables(workflow_content)
+    for job_name, job in jobs.items():
+        gitlab_cicd_content[job_name] = {}
+        image = get_docker_image(job)
+        if image:
+            gitlab_cicd_content[job_name]["image"] = image
+        gitlab_cicd_content[job_name]["variables"] = variables
+        steps = get_steps(job)
+        cache = get_cache(steps)
+        if cache:
+            gitlab_cicd_content[job_name]["cache"] = cache
+        script = get_script(steps)
+        gitlab_cicd_content[job_name]["script"] = script
+        artifacts = get_artifacts(steps)
+        if artifacts:
+            gitlab_cicd_content[job_name]["artifacts"] = artifacts
+    return gitlab_cicd_content
