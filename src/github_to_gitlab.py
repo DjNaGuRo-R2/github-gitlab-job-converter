@@ -9,7 +9,7 @@ def browseDict(keyElt, dictionary):
                 return result
     return NOT_FOUND  
 
-def get_variables(dictionary):
+def get_inputs_and_secrets(dictionary):
     variables = {}
     _, value = browseDict("workflow_call", dictionary)
     inputs = value.get("inputs", "")
@@ -22,6 +22,14 @@ def get_variables(dictionary):
         for key, value in secrets.items():
             variables[key] = format_content(value.get("default", "")) \
                 if value.get("type") == "string" else value.get("default", "")
+    return variables
+
+def get_job_env_variables(job):
+    variables = {}
+    env = job.get("env", {})
+    if(env):
+        for key, value in env.items():
+            variables[key] = format_content(value)
     return variables
 
 def get_docker_image(job):
@@ -43,7 +51,12 @@ def get_artifacts(steps):
     artifacts = {}
     for elt in steps:
         if "actions/upload-artifact" in elt.get("uses", ""):
-            artifacts["name"] = format_content(elt["with"].get("name", ""))
+             # concatane format_content(elt["with"].get("name", "") and artifacts["name"] iff 
+             # this last is not empty and not whitespaces
+            artifacts["name"] = (
+                format_content(elt["with"].get("name", "")), 
+                artifacts["name"] + " - " + format_content(elt["with"].get("name", ""))
+                )[ not artifacts["name"].isspace() and len(artifacts["name"]) > 0]
             artifacts["paths"] = [format_content(line) 
                                     for line in elt["with"].get("path", "").splitlines()]
             artifacts["expire_in"] = elt["with"].get("retention-days", "")
@@ -78,7 +91,7 @@ def get_script(steps):
 def github_calleable_workflow_to_gitlab(workflow_content):
     _,jobs = browseDict("jobs", workflow_content)
     gitlab_cicd_content = {}
-    variables = get_variables(workflow_content)
+    variables = get_inputs_and_secrets(workflow_content)
     for job_name, job in jobs.items():
         gitlab_cicd_content[job_name] = {}
         image = get_docker_image(job)
