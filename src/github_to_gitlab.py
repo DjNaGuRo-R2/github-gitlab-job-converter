@@ -119,14 +119,15 @@ def format_content(string):
 
 def github_workflow_to_gitlab(workflow_content):
     _,jobs = browseDict("jobs", workflow_content)
-    gitlab_cicd_content = {}
-    variables = get_job_env_variables(workflow_content)
+    gitlab_cicd_content = {}    
     for job_name, job in jobs.items():
         gitlab_cicd_content[job_name] = {}
+        variables = get_job_env_variables(job)
         image = get_docker_image(job)
         if image:
             gitlab_cicd_content[job_name]["image"] = image
-        gitlab_cicd_content[job_name]["variables"] = variables
+        if variables:
+            gitlab_cicd_content[job_name]["variables"] = variables
         steps = get_steps(job)
         cache = get_cache(steps)
         if cache:
