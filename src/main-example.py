@@ -2,9 +2,11 @@ from github_to_gitlab import github_calleable_workflow_to_gitlab, github_workflo
 #from yaml import load, dump
 import yaml
 
-JOB_NAME = "cypress_run_2"
-INPUT_JOB_FILE = f"../Inputs/github/{JOB_NAME}.yml"
-OUTPUT_JOB_FILE = f"../Outputs/gitlab/{JOB_NAME}.yml"
+JOB_NAME = "release"
+INPUT_FOLDER = "OthersWorkflows/Inputs/twitter-together"
+INPUT_JOB_FILE = f"{INPUT_FOLDER}/{JOB_NAME}.yml"
+OUTPUT_FOLDER = "OthersWorkflows/Outputs/twitter-together"
+OUTPUT_JOB_FILE = f"{OUTPUT_FOLDER}/{JOB_NAME}.yml"
 
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
