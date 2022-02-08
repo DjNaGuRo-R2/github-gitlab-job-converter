@@ -135,6 +135,6 @@ def github_workflow_to_gitlab(workflow_content):
         script = get_script(steps)
         gitlab_cicd_content[job_name]["script"] = script
         artifacts = get_artifacts(steps)
-        if artifacts:
+        if artifacts["paths"]:
             gitlab_cicd_content[job_name]["artifacts"] = artifacts
     return gitlab_cicd_content
