@@ -110,6 +110,9 @@ def github_calleable_workflow_to_gitlab(workflow_content):
         artifacts = get_artifacts(steps)
         if artifacts:
             gitlab_cicd_content[job_name]["artifacts"] = artifacts
+        matrix = get_matrix(job)
+        if matrix:
+            gitlab_cicd_content[job_name]["matrix"] = matrix
     return gitlab_cicd_content
 
 def format_content(string):
@@ -137,4 +140,20 @@ def github_workflow_to_gitlab(workflow_content):
         artifacts = get_artifacts(steps)
         if artifacts["paths"]:
             gitlab_cicd_content[job_name]["artifacts"] = artifacts
+        matrix = get_matrix(job)
+        if matrix:
+            gitlab_cicd_content[job_name]["matrix"] = matrix
     return gitlab_cicd_content
+
+def get_matrix(job):
+    parallel_matrix = []
+    orphan_elts = {}
+    _, strategy_matrix = browseDict("matrix", job)
+    for elt in strategy_matrix:
+        if elt not in ("exclude", "include", "fail_fast"):
+            orphan_elts[elt] = strategy_matrix[elt]
+        if elt == "include":
+            parallel_matrix.extend(strategy_matrix[elt])
+    if orphan_elts:
+        parallel_matrix.insert(0, orphan_elts)
+    return parallel_matrix
