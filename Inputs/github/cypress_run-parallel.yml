@@ -1,0 +1,82 @@
+name: Cypress run CI
+
+on: [push]
+
+jobs:
+  cypress_run:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        reporter: ['spec', 'junit', 'teamcity']
+        options: ['', '--parallel']
+        exclude: 
+          - reporter: ['junit', 'teamcity']
+            options: ''
+    #container: 
+    #  image: cypress/browsers:node16.5.0-chrome94-ff93
+      #options: --user 1001 # Cypress images are owned by user ID 1001 and by default Cypress run test with root user
+    env:
+      CYPRESS_CONFIG_FILE : ${{'cypress.json'}}
+      CYPRESS_PROJECT_PATH : ${{'.'}}
+      CYPRESS_RECORD_KEY : ${{secrets.CYPRESS_RECORD_KEY}}
+      CYPRESS_REPORTER : ${{ matrix.reporter }}
+      CYPRESS_BASE_URL : ${{'http://localhost:8080'}}
+      ADDITIONAL_OPTIONS : ${{ matrix.options }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache node modules
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-node-modules
+        with:
+          # A list of files, directories, and wildcard patterns to cache and restore
+          path: |
+            ~/.npm
+            ~/.cache/Cypress
+          # An explicit key for restoring and saving the cache
+          key: ${{runner.os}}-build-${{env.cache-name}}-${{hashFiles('**/package-lock.json')}}
+          # An ordered list of keys to use for restoring the cache if no cache hit occurred for key
+          restore-keys: | # Optional
+            ${{runner.os}}-build-${{env.cache-name}}-
+      - name: Install dependencies
+        run: npm ci
+      - name: Install wait-on package
+        run: npm i -g wait-on
+      - name: Make Cypress wait until the server is up and available
+        run: |
+          if [ ! -z ${{env.CYPRESS_BASE_URL}} ]; then
+              npm start --no-clipboard & wait-on $CYPRESS_BASE_URL
+          else 
+              echo "Variable CYPRESS_BASE_URL is MANDATORY. You must fill it !"
+              exit 1
+          fi
+      - name: Run Cypress tests
+        run: |
+          if [ ! -z ${{env.CYPRESS_RECORD_KEY}} ]; then
+              npx cypress run -P ${{env.CYPRESS_PROJECT_PATH}} -C ${{env.CYPRESS_CONFIG_FILE}} -r ${{env.CYPRESS_REPORTER}} ${{env.ADDITIONAL_OPTIONS}} --record
+          else
+              npx cypress run -P ${{env.CYPRESS_PROJECT_PATH}} -C ${{env.CYPRESS_CONFIG_FILE}} -r ${{env.CYPRESS_REPORTER}} ${{env.ADDITIONAL_OPTIONS}}
+          fi
+        env:
+          CYPRESS_RECORD_KEY: ${{secrets.CYPRESS_RECORD_KEY}}
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+            
+      - name: Archive Cypress videos
+        uses: actions/upload-artifact@v2
+        if: always() 
+        with:
+          # Artifact name. Optional, default is artifact
+          name: cypress-videos
+          path: cypress/videos
+          if-no-files-found: error
+          retention-days: 15
+      - name: Archive Cypress screenshots when job failed
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          # Artifact name. Optional, default is artifact
+          name: cypress-screenshots
+          path: cypress/screenshots
+          if-no-files-found: error
+          retention-days: 15

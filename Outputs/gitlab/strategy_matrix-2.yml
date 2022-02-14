@@ -1,0 +1,17 @@
+build:
+  matrix:
+  - options:
+    - ''
+    - --parallel
+    reporter:
+    - spec
+    - junit
+    - teamcity
+  - datacenter: site-a
+    node-version: 10.x
+    site: prod
+  - datacenter: site-b
+    node-version: 12.x
+    site: dev
+  script:
+  - echo $SITE $DATACENTER
